@@ -169,8 +169,49 @@ def BGPLVM(X_train, X_dev, comp_dims_PCA):
 
 
 
-def SVGP():
-    pass
+def SVGP(X, y, X_test, y_test, C_num, start = 1):
+    """
+    the X should like: (batch_size, dims)
+    the y should like: (batch_size, 1) and start with 0 not 1
+    """
+    dims = X.shape[1]
+    y = y - start
+
+    max_sample = 1700
+
+    # sample_rate = 0.3
+    sample_num = max_sample if X.shape[0] > max_sample else X.shape[0]
+    # print(f"x shape is {sample_num}")
+
+    sample_index = np.random.choice(range(X.shape[0]), sample_num, replace = False)
+    sample_index.sort()
+
+    # print(f"the shape is{sample_index}")
+
+    SVGP = gpflow.models.SVGP(
+        X, y, 
+        kern=gpflow.kernels.RBF(dims) + gpflow.kernels.White(dims, variance = 0.01), 
+        Z=X[sample_index, :].copy(),
+        likelihood=gpflow.likelihoods.MultiClass(C_num), 
+        num_latent=C_num, 
+        whiten=True, 
+        q_diag=True
+    )
+
+    gpflow.train.ScipyOptimizer().minimize(SVGP)
+
+    p_train, _ = SVGP.predict_y(X)
+
+    p_test, _ = SVGP.predict_y(X_test)
+
+    train_pred = np.argmax(p_train, axis=1) + start
+    test_pred = np.argmax(p_test, axis=1) + start
+
+    train_acc = accuracy_score(y, train_pred)
+    test_acc = accuracy_score(y_test, test_pred)
+
+    # return pred + start
+    return train_acc, test_acc
 
 
 def main():
@@ -222,10 +263,11 @@ def main():
     train_acc = 0.0
     dev_acc = 0.0
 
-    print(x_train.shape)
-    print(x_dev.shape)
+    # print(x_train.shape)
+    # print(x_dev.shape)
 
-    train_acc, dev_acc = softmax_classfier(x_train, y_train.squeeze(), Comp_dims_PCA, C, x_dev, y_dev.squeeze())
+    # train_acc, dev_acc = softmax_classfier(x_train, y_train.squeeze(), Comp_dims_PCA, C, x_dev, y_dev.squeeze())
+    train_acc, dev_acc = SVGP(x_train, y_train, x_dev, y_dev, C, 0)
 
     print(f"the train accuracy is {train_acc * 100}%")
     print(f"the cross validation accuracy is {dev_acc * 100}%")
