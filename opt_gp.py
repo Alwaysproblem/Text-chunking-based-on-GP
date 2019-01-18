@@ -139,8 +139,8 @@ def BGPLVM(X_train, X_dev, comp_dims_PCA):
     split = X_train.shape[0]
     compress_2_x = comp_dims_PCA
     # print(X_data.shape)
-    # X_Mean = gpflow.models.PCA_reduce(X_data, compress_2_x) # Initialise via PCA
     X_data = np.concatenate([X_train, X_dev], axis=0)
+    X_Mean = gpflow.models.PCA_reduce(X_data, compress_2_x) # Initialise via PCA
 
     X_Mean = X_data
     # print(X_Mean.shape)
@@ -177,21 +177,23 @@ def SVGP(X, y, X_test, y_test, C_num, start = 1):
     dims = X.shape[1]
     y = y - start
 
-    max_sample = 1700
+    max_sample = 1500
 
     # sample_rate = 0.3
-    sample_num = max_sample if X.shape[0] > max_sample else X.shape[0]
+    # sample_num = max_sample if X.shape[0] > max_sample else X.shape[0]
     # print(f"x shape is {sample_num}")
 
-    sample_index = np.random.choice(range(X.shape[0]), sample_num, replace = False)
-    sample_index.sort()
+    Z = np.random.permutation(X.copy())[:max_sample]
+
+    # sample_index = np.random.choice(range(X.shape[0]), sample_num, replace = False)
+    # sample_index.sort()
 
     # print(f"the shape is{sample_index}")
 
     SVGP = gpflow.models.SVGP(
         X, y, 
-        kern=gpflow.kernels.RBF(dims) + gpflow.kernels.White(dims, variance = 0.01), 
-        Z=X[sample_index, :].copy(),
+        kern=gpflow.kernels.RBF(dims, ARD=True) + gpflow.kernels.White(dims, variance = 0.01), 
+        Z=Z,
         likelihood=gpflow.likelihoods.MultiClass(C_num), 
         num_latent=C_num, 
         whiten=True, 
@@ -222,7 +224,7 @@ def main():
     Comp_dims_CS = 95
     #define the dimentional of compressed matrix.
 
-    Comp_dims_PCA = 95
+    Comp_dims_PCA = 50
 
     Miu = 0
     Sigma = 1
