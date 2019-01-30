@@ -232,7 +232,7 @@ def SVGP(X, y, X_test, y_test, C_num, X_mean, start = 1):
 
     from scipy.cluster.vq import kmeans
     Z = kmeans(X, C_num)[0]
-    
+
     # print(X_mean.shape)
     # Z = np.random.permutation(X.copy())[:max_sample]
 

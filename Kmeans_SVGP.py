@@ -106,7 +106,7 @@ def softmax_classfier(input_data, label, Comp_dims, class_num, X_test, y_test):
     return train_acc, test_acc
 
 
-def SVGP(X, y, X_test, y_test, C_num, start = 1):
+def SVGP(X, y, X_test, y_test, C_num, start = 1, num_inducing = 1500):
     """
     the X should like: (batch_size, dims)
     the y should like: (batch_size, 1) and start with 0 not 1
@@ -114,8 +114,10 @@ def SVGP(X, y, X_test, y_test, C_num, start = 1):
     dims = X.shape[1]
     y = y - start
 
+    num_inducing = num_inducing
+
     from scipy.cluster.vq import kmeans
-    Z = kmeans(X, 1500)[0]
+    Z = kmeans(X, num_inducing)[0]
 
     SVGP = gpflow.models.SVGP(
         X, y, 
