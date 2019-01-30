@@ -108,10 +108,13 @@ def softmax_classfier(input_data, label, Comp_dims, class_num, X_test, y_test):
 
     return train_acc, test_acc
 
-# def BGPLVM(X_data, comp_dims_PCA):
+# def BGPLVM(X_train, X_dev, comp_dims_PCA):
+#     split = X_train.shape[0]
 #     compress_2_x = comp_dims_PCA
 #     # print(X_data.shape)
-#     # X_Mean = gpflow.models.PCA_reduce(X_data, compress_2_x) # Initialise via PCA
+#     X_data = np.concatenate([X_train, X_dev], axis=0)
+#     X_Mean = gpflow.models.PCA_reduce(X_data, compress_2_x) # Initialise via PCA
+
 #     X_Mean = X_data
 #     # print(X_Mean.shape)
 #     X_Var = 0.1 * np.ones_like(X_Mean)
@@ -133,20 +136,67 @@ def softmax_classfier(input_data, label, Comp_dims, class_num, X_test, y_test):
 #     model.compile()
 #     opt.minimize(model)
 
-#     return model.X_mean.read_value()
+#     X = model.X_mean.read_value()
 
-def BGPLVM(X_train, X_dev, comp_dims_PCA):
-    split = X_train.shape[0]
+#     return X[:split, :], X[split:, :]
+
+
+
+# def SVGP(X, y, X_test, y_test, C_num, start = 1):
+#     """
+#     the X should like: (batch_size, dims)
+#     the y should like: (batch_size, 1) and start with 0 not 1
+#     """
+#     dims = X.shape[1]
+#     y = y - start
+
+#     max_sample = 1500
+
+#     # sample_rate = 0.3
+#     # sample_num = max_sample if X.shape[0] > max_sample else X.shape[0]
+#     # print(f"x shape is {sample_num}")
+
+#     Z = np.random.permutation(X.copy())[:max_sample]
+
+#     # sample_index = np.random.choice(range(X.shape[0]), sample_num, replace = False)
+#     # sample_index.sort()
+
+#     # print(f"the shape is{sample_index}")
+
+#     SVGP = gpflow.models.SVGP(
+#         X, y, 
+#         kern=gpflow.kernels.RBF(dims, ARD=True) + gpflow.kernels.White(dims, variance = 0.01), 
+#         Z=Z,
+#         likelihood=gpflow.likelihoods.MultiClass(C_num), 
+#         num_latent=C_num, 
+#         whiten=True, 
+#         q_diag=True
+#     )
+
+#     gpflow.train.ScipyOptimizer().minimize(SVGP)
+
+#     p_train, _ = SVGP.predict_y(X)
+
+#     p_test, _ = SVGP.predict_y(X_test)
+
+#     train_pred = np.argmax(p_train, axis=1) + start
+#     test_pred = np.argmax(p_test, axis=1) + start
+
+#     train_acc = accuracy_score(y, train_pred)
+#     test_acc = accuracy_score(y_test, test_pred)
+
+#     # return pred + start
+#     return train_acc, test_acc
+
+def BGPLVM(X_data, comp_dims_PCA):
     compress_2_x = comp_dims_PCA
     # print(X_data.shape)
-    X_data = np.concatenate([X_train, X_dev], axis=0)
-    X_Mean = gpflow.models.PCA_reduce(X_data, compress_2_x) # Initialise via PCA
-
+    # X_Mean = gpflow.models.PCA_reduce(X_data, compress_2_x) # Initialise via PCA
     X_Mean = X_data
     # print(X_Mean.shape)
     X_Var = 0.1 * np.ones_like(X_Mean)
     dim = X_Mean.shape[1]
-    Core = gpflow.kernels.RBF(input_dim=dim, ARD=True)
+    Core = gpflow.kernels.RBF(input_dim=dim, ARD=False)
     M = 100
     Z = np.random.permutation(X_Mean.copy())[:M]
 
@@ -158,18 +208,15 @@ def BGPLVM(X_train, X_dev, comp_dims_PCA):
                 M = M,
                 Z = Z
             )
+
     model.likelihood.variance = 0.1
     opt = gpflow.train.ScipyOptimizer()
     model.compile()
     opt.minimize(model)
 
-    X = model.X_mean.read_value()
+    return model.X_mean.read_value()
 
-    return X[:split, :], X[split:, :]
-
-
-
-def SVGP(X, y, X_test, y_test, C_num, start = 1):
+def SVGP(X, y, X_test, y_test, C_num, X_mean, start = 1):
     """
     the X should like: (batch_size, dims)
     the y should like: (batch_size, 1) and start with 0 not 1
@@ -177,22 +224,27 @@ def SVGP(X, y, X_test, y_test, C_num, start = 1):
     dims = X.shape[1]
     y = y - start
 
-    max_sample = 1500
+    # max_sample = 1500
 
     # sample_rate = 0.3
     # sample_num = max_sample if X.shape[0] > max_sample else X.shape[0]
     # print(f"x shape is {sample_num}")
 
-    Z = np.random.permutation(X.copy())[:max_sample]
+    from scipy.cluster.vq import kmeans
+    Z = kmeans(X, C_num)[0]
+    
+    # print(X_mean.shape)
+    # Z = np.random.permutation(X.copy())[:max_sample]
 
     # sample_index = np.random.choice(range(X.shape[0]), sample_num, replace = False)
     # sample_index.sort()
 
     # print(f"the shape is{sample_index}")
+    
 
     SVGP = gpflow.models.SVGP(
         X, y, 
-        kern=gpflow.kernels.RBF(dims, ARD=True) + gpflow.kernels.White(dims, variance = 0.01), 
+        kern=gpflow.kernels.RBF(dims) + gpflow.kernels.White(dims, variance = 0.01), 
         Z=Z,
         likelihood=gpflow.likelihoods.MultiClass(C_num), 
         num_latent=C_num, 
@@ -224,7 +276,7 @@ def main():
     Comp_dims_CS = 95
     #define the dimentional of compressed matrix.
 
-    Comp_dims_PCA = 50
+    Comp_dims_PCA = Comp_dims_CS
 
     Miu = 0
     Sigma = 1
@@ -251,7 +303,7 @@ def main():
     gc.collect()
 
     print("processing training data with BGPLVM")
-    x_train, x_dev = BGPLVM(X_train, X_dev, Comp_dims_PCA)
+    x_mean = BGPLVM(X_train, Comp_dims_PCA)
     gpflow.reset_default_graph_and_session()
 
     # print("processing dev data with BGPLVM")
@@ -269,7 +321,7 @@ def main():
     # print(x_dev.shape)
 
     # train_acc, dev_acc = softmax_classfier(x_train, y_train.squeeze(), Comp_dims_PCA, C, x_dev, y_dev.squeeze())
-    train_acc, dev_acc = SVGP(x_train, y_train, x_dev, y_dev, C, 0)
+    train_acc, dev_acc = SVGP(X_train, y_train, X_dev, y_dev, C, x_mean, 0)
 
     print(f"the train accuracy is {train_acc * 100}%")
     print(f"the cross validation accuracy is {dev_acc * 100}%")
