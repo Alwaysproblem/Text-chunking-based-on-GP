@@ -1,17 +1,49 @@
-import os
 import glob
-import numpy as np
-from sklearn.metrics import accuracy_score
-import tensorflow as tf
-import gpflow
-
 import os
+import zipfile
+
+import gpflow
+import numpy as np
+import tensorflow as tf
+from sklearn.metrics import accuracy_score
+from sklearn.decomposition import TruncatedSVD
+from scipy.sparse import csr_matrix as csrmat, vstack
+
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-tarin_path = './conll_train'
+train_path = './conll_train'
 dev_path = './conll_dev'
 
+train_zip_path = 'conll_train.zip'
+dev_zip_path = 'conll_dev.zip'
+
 np.random.seed(1)
+
+def Load_Data_zip(FileName, Dim, sample_rate = 0.1):
+    X_data = list()
+    y_data = list()
+    with zipfile.ZipFile(FileName) as train_zip:
+        for fname in train_zip.namelist():
+            if '.' in fname:
+                with train_zip.open(fname) as f:
+                    if fname[-1] == "x":
+                        X_data.append(load_x(f, Dim))
+                    elif fname[-1] == "y":
+                        y_data.append(load_y(f))
+    
+    return vstack(X_data, dtype=np.float), np.concatenate(y_data, axis=0)
+
+def load_x(file, Dim):
+    X_form = np.loadtxt(file, dtype=np.int32)
+    row_num = np.max(X_form[:, 0])
+    Sparse = csrmat((X_form[:, 2], (X_form[:, 0] - 1, X_form[:, 1] - 1)), shape=(row_num, Dim), dtype=np.float)
+    return Sparse
+
+def load_y(file):
+    y_form = np.loadtxt(file)
+    return np.mat(y_form).T
+
 
 def Load_Data(A, Comp_dims, path='./conll_train', sample = None, replace = False):
     x_comp_data = []
@@ -30,9 +62,8 @@ def Load_Data(A, Comp_dims, path='./conll_train', sample = None, replace = False
         sam_ind = np.random.choice(range(Num), round(sample * Num), replace = replace)
         x_file_list = [x_file_list[I] for I in sam_ind]
         y_file_list = [y_file_list[I] for I in sam_ind]
-    
-    print(f"Parsing {len(x_file_list)} xfiles and {len(y_file_list)} yfiles.")
 
+    print(f"Parsing {len(x_file_list)} xfiles and {len(y_file_list)} yfiles.")
 
     for X, y in list(zip(x_file_list, y_file_list)):
         len_of_y = 0
@@ -149,39 +180,28 @@ def main():
     D = 2035523
     # define the dimentional of give example sparse matrix.
 
-    Comp_dims = 95
+    Comp_dims = 100
     #define the dimentional of compressed matrix.
 
-    Miu = 0
-    Sigma = 1
-    # A = Miu + np.mat(np.random.randn(Comp_dims, D)) * Sigma
-
-    A = np.mat(np.random.normal(Miu, Sigma, (Comp_dims, D)))
-
-    # y = A * s, the s is sparse-matrix. the y is compressed measurements.
-
     C = 23
-    # C = 22
 
-    X_train, y_train = Load_Data(A, Comp_dims, sample=0.1)
-    X_dev, y_dev = Load_Data(A, Comp_dims, path=dev_path, sample=0.015)
+    X_train, y_train = Load_Data_zip(train_zip_path, D)
+    X_dev, y_dev = Load_Data_zip(dev_zip_path, D)
 
-    print("free the A memory...")
-    import gc
-    del A
-    gc.collect()
+    # X_train, y_train = Load_Data(A, Comp_dims, sample=0.1)
+    # X_dev, y_dev = Load_Data(A, Comp_dims, path=dev_path, sample=0.015)
 
     print("start training...")
 
-    # print(y_dev)
+    svd = TruncatedSVD(Comp_dims, n_iter=100)
+    svd.fit(X_train)
+    x_train = np.mat(svd.transform(X_train))
+    x_dev = np.mat(svd.transform(X_dev))
 
-    train_acc, dev_acc = SVGP(X_train, y_train, X_dev, y_dev, C, 0)
+    train_acc, dev_acc = SVGP(x_train, y_train, x_dev, y_dev, C, 0)
 
     print(f"the train accuracy is {train_acc * 100}%.")
-
     print(f"the cross validation accuracy is {dev_acc * 100}%.")
-
-    # print(y_dev_pred)
 
     # train_acc, dev_acc = softmax_classfier(X_train, y_train, Comp_dims, C, X_dev, y_dev)
 
