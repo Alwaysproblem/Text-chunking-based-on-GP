@@ -44,70 +44,6 @@ def load_y(file):
     y_form = np.loadtxt(file)
     return np.mat(y_form).T
 
-
-def Load_Data(A, Comp_dims, path='./conll_train', sample = None, replace = False):
-    x_comp_data = []
-    y_label = []
-    name = path.split("_")[-1]
-    print(f"Loading {name} Data...")
-    dir = os.path.dirname(__file__)
-
-    x_file_list = glob.glob(os.path.join(dir, path + "/*.x"))
-    y_file_list = glob.glob(os.path.join(dir, path + "/*.y"))
-
-    if sample == None:
-        pass
-    else:
-        Num = len(x_file_list)
-        sam_ind = np.random.choice(range(Num), round(sample * Num), replace = replace)
-        x_file_list = [x_file_list[I] for I in sam_ind]
-        y_file_list = [y_file_list[I] for I in sam_ind]
-
-    print(f"Parsing {len(x_file_list)} xfiles and {len(y_file_list)} yfiles.")
-
-    for X, y in list(zip(x_file_list, y_file_list)):
-        len_of_y = 0
-        with open(y, "r") as yf:
-            y_content = [int(row.strip()) for row in yf.readlines()]
-            len_of_y = len(y_content)
-            y_label.append(y_content)
-
-        with open(X, "r") as xf:
-            compX = []
-            content = [row.strip() for row in xf.readlines()]
-            for ind in range(1, len_of_y + 1):
-                X_data = np.mat(np.zeros((Comp_dims, 1)))
-                for c in content:
-                    tran = [int(t) for t in c.split()]
-                    if tran[0] == ind:
-                        X_data += A[:, tran[1]]
-                if compX == []:
-                    compX = X_data
-                else:
-                    compX = np.concatenate([compX, X_data], axis = 1)
-                    """
-                    the label is like:
-                         0    2
-                    the X data is like: shape like (Comp_dims, len of label)
-                       [[18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]
-                        [18.  2.]]
-                    """
-            x_comp_data.append(compX.T)
-    Y = np.concatenate(y_label, axis = 0)
-    Y = np.array(Y, dtype = np.float64)
-    Y = Y[:, None]
-
-    return np.concatenate(x_comp_data, axis = 0), Y
-
-
 def softmax_classfier(input_data, label, Comp_dims, class_num, X_test, y_test):
     # print(input_data.shape)
     # print(label.shape)
@@ -185,19 +121,17 @@ def main():
 
     C = 23
 
+    print("Loading data from the zip files....")
     X_train, y_train = Load_Data_zip(train_zip_path, D)
     X_dev, y_dev = Load_Data_zip(dev_zip_path, D)
 
-    # X_train, y_train = Load_Data(A, Comp_dims, sample=0.1)
-    # X_dev, y_dev = Load_Data(A, Comp_dims, path=dev_path, sample=0.015)
-
-    print("start training...")
-
+    print("compress the training data and dev data with TruncatedSVD.")
     svd = TruncatedSVD(Comp_dims, n_iter=100)
     svd.fit(X_train)
     x_train = np.mat(svd.transform(X_train))
     x_dev = np.mat(svd.transform(X_dev))
 
+    print("start training...")
     train_acc, dev_acc = SVGP(x_train, y_train, x_dev, y_dev, C, 0)
 
     print(f"the train accuracy is {train_acc * 100}%.")
