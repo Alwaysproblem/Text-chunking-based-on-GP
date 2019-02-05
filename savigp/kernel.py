@@ -5,6 +5,16 @@ from GPy.util.linalg import mdot
 
 from . import util
 
+# define an automatic obtain kernel function.
+def get_ExtRBF_kernels(input_dim, num_latent_proc, variance = 1, lengthscale = None, ARD = False):
+    """
+    """
+    return [ExtRBF(
+                input_dim, variance = variance, 
+                lengthscale=np.array((1.,)) if lengthscale is None else lengthscale,
+                ARD=ARD
+            )
+            for _ in range(num_latent_proc)]
 
 class ExtRBF(RBF):
     """
