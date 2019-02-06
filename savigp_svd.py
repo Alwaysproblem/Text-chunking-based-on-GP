@@ -27,9 +27,6 @@ def Load_Data_zip(FileName, Dim, sample_rate = 0.1):
                         X_data.append(load_x(f, Dim))
                     elif fname[-1] == "y":
                         y_data.append(load_y(f))
-    
-    sample_num = round(sample_rate * len(X_data))
-    sample_index = np.random.choice(range(len(X_data)), size=sample_num, replace=False)
 
     return vstack(X_data, dtype=np.float), np.concatenate(y_data, axis=0)
 
@@ -74,7 +71,18 @@ def softmax_classfier(input_data, label, Comp_dims, class_num, X_test, y_test):
 
     return train_acc, test_acc
 
+
 def SAVIGP(X, y, X_test, y_test, C_num):
+
+    X = np.array(X)
+    X_test = np.array(X_test)
+    # One-hot transformation for y
+    from sklearn.preprocessing import OneHotEncoder as onehot
+    trans = onehot()
+    l = np.arange(C_num)[:, None]
+    trans.fit(l)
+    y = trans.transformation(y).toarray()
+
     print("define the softmax likelihood.")
     likelihood = SoftmaxLL(C_num)
     print("Define kernels.")
@@ -85,7 +93,7 @@ def SAVIGP(X, y, X_test, y_test, C_num):
     print(f"the number of inducing points {num_inducing}")
     print('\n  | '.join([
                     "Define the model",
-                    "posterior-'diag'",
+                    "posterior-'full'",
                     "Components-2",
                     "random Inducing False"
                 ]))
@@ -93,20 +101,21 @@ def SAVIGP(X, y, X_test, y_test, C_num):
         likelihood = likelihood,
         kernels = kernels,
         num_inducing = num_inducing,
-        posterior="diag",
-        num_components = 2,
+        # posterior="diag",
+        # num_components = 2,
         debug_output= True,
         random_inducing = False
     )
     print('\n  | '.join([
                     "Fitting...",
                     "optimization_config-{'hyp':15, 'mog':25, 'inducing': 20}",
-                    "optimize_stochastic-False"
+                    "optimize_stochastic-True"
                 ]))
     model.fit(
             X, y, 
             optimization_config={'hyp':15, 'mog':25, 'inducing': 20},
-            optimize_stochastic=False
+            optimize_stochastic=True,
+            max_iterations=100
         )
     print("Predicting...")
     y_train, _, _ = model.predict(X)
@@ -115,7 +124,7 @@ def SAVIGP(X, y, X_test, y_test, C_num):
     y_train = np.argmax(y_train, axis=1)
     y = np.argmax(y, axis=1)
 
-    y_test = np.argmax(y_test, axis=1)
+    # y_test = np.argmax(y_test, axis=1)
     y_test_pred = np.argmax(y_test_pred, axis=1)
 
     train_acc = accuracy_score(y_train, y)
@@ -154,10 +163,16 @@ def main():
     train_acc, dev_acc = SAVIGP(x_train, y_train, x_dev, y_dev, C)
     print("Done.")
 
+    print("GP:")
     print(f"the train accuracy is {train_acc * 100}%.")
     print(f"the cross validation accuracy is {dev_acc * 100}%.")
 
+
     train_acc, dev_acc = softmax_classfier(X_train, y_train, Comp_dims, C, X_dev, y_dev)
+
+    print("softmax:")
+    print(f"the train accuracy is {train_acc * 100}%.")
+    print(f"the cross validation accuracy is {dev_acc * 100}%.")
 
 
 if __name__ == '__main__':
