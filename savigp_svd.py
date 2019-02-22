@@ -2,6 +2,8 @@ import glob
 import os
 import zipfile
 
+from multiprocessing import cpu_count
+
 import gpflow
 import numpy as np
 import tensorflow as tf
@@ -81,7 +83,7 @@ def SAVIGP(X, y, X_test, y_test, C_num):
     trans = onehot()
     l = np.arange(C_num)[:, None]
     trans.fit(l)
-    y = trans.transformation(y).toarray()
+    y = trans.transform(y).toarray()
 
     print("define the softmax likelihood.")
     likelihood = SoftmaxLL(C_num)
@@ -93,7 +95,7 @@ def SAVIGP(X, y, X_test, y_test, C_num):
     print(f"the number of inducing points {num_inducing}")
     print('\n  | '.join([
                     "Define the model",
-                    "posterior-'full'",
+                    "posterior-'diag'",
                     "Components-2",
                     "random Inducing False"
                 ]))
@@ -101,20 +103,21 @@ def SAVIGP(X, y, X_test, y_test, C_num):
         likelihood = likelihood,
         kernels = kernels,
         num_inducing = num_inducing,
-        # posterior="diag",
-        # num_components = 2,
+        posterior="diag",
+        num_components = 2,
         debug_output= True,
         random_inducing = False
     )
     print('\n  | '.join([
                     "Fitting...",
                     "optimization_config-{'hyp':15, 'mog':25, 'inducing': 20}",
-                    "optimize_stochastic-True"
+                    "optimize_stochastic-False"
                 ]))
     model.fit(
             X, y, 
             optimization_config={'hyp':15, 'mog':25, 'inducing': 20},
-            optimize_stochastic=True,
+            optimize_stochastic=False,
+            num_threads=cpu_count(),
             max_iterations=100
         )
     print("Predicting...")
@@ -168,11 +171,11 @@ def main():
     print(f"the cross validation accuracy is {dev_acc * 100}%.")
 
 
-    train_acc, dev_acc = softmax_classfier(X_train, y_train, Comp_dims, C, X_dev, y_dev)
+    # train_acc, dev_acc = softmax_classfier(X_train, y_train, Comp_dims, C, X_dev, y_dev)
 
-    print("softmax:")
-    print(f"the train accuracy is {train_acc * 100}%.")
-    print(f"the cross validation accuracy is {dev_acc * 100}%.")
+    # print("softmax:")
+    # print(f"the train accuracy is {train_acc * 100}%.")
+    # print(f"the cross validation accuracy is {dev_acc * 100}%.")
 
 
 if __name__ == '__main__':
