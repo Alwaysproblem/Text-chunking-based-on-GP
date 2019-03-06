@@ -111,12 +111,12 @@ def SAVIGP(X, y, X_test, y_test, C_num):
     print('\n  | '.join([
                     "Fitting...",
                     "optimization_config-{'hyp':15, 'mog':25, 'inducing': 20}",
-                    "optimize_stochastic-False"
+                    "optimize_stochastic-True"
                 ]))
     model.fit(
             X, y, 
             optimization_config={'hyp':15, 'mog':25, 'inducing': 20},
-            optimize_stochastic=False,
+            optimize_stochastic=True,
             num_threads=cpu_count(),
             max_iterations=100
         )
@@ -151,7 +151,7 @@ def main():
     X_dev, y_dev = Load_Data_zip(dev_zip_path, D)
 
     print("compress the training data and dev data with TruncatedSVD.")
-    svd = TruncatedSVD(Comp_dims, n_iter=100)
+    svd = TruncatedSVD(Comp_dims, n_iter=5)
     svd.fit(X_train)
     x_train_svd = np.mat(svd.transform(X_train))
     x_dev_svd = np.mat(svd.transform(X_dev))

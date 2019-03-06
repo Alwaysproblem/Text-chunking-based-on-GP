@@ -40,11 +40,14 @@ class PosDefMatrix(object):
 
 def torchify(func):
     def wrapper(*args):
-        new_args = [torch.from_numpy(arg) if isinstance(arg, np.ndarray) else arg for arg in args]
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if device.type == 'cuda':
+            torch.set_default_tensor_type(torch.cuda.DoubleTensor)
+        new_args = [torch.from_numpy(arg).to(device) if isinstance(arg, np.ndarray) else arg for arg in args]
         result = func(*new_args)
         if isinstance(result, tuple):
-            return tuple(res.numpy() for res in result)
-        return result.numpy()
+            return tuple(res.cpu().numpy() for res in result)
+        return result.cpu().numpy()
     return wrapper
 
 def weighted_average(weights, points, num_samples):
@@ -246,5 +249,15 @@ def drange(start, stop, step):
 
 class JitChol(Exception):
     def __init__(self, message):
-        super.__init__()
+        super().__init__()
         self.message = message
+
+
+# if __name__ == "__main__":
+#     import torch
+
+#     @torchify
+#     def tt(a, b):
+#         return a.mm(b)
+
+#     print(tt(torch.tensor([[1, 2]]), torch.tensor([[3, 4]]).t()))
