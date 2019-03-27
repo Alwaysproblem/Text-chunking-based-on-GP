@@ -65,8 +65,8 @@ indicates that the *k*th feature for the *j*th word/token in the sentence has va
     ```
     - on Windows
     ```powershell
-    $ python -m pip install --user -U pip
-    $ pip install -r requirement.txt
+    > python -m pip install --user -U pip
+    > pip install -r requirement.txt
     ```
 
 ## Preprocessing
