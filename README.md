@@ -12,6 +12,7 @@ The segmentation of this sentence into chunks and their corresponding labels is 
 ---------
 
 Table 1.
+
 |           |      |
 |:---------:| ---- |
 | He        | B-NP |
