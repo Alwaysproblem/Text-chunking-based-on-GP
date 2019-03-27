@@ -45,6 +45,29 @@ Let $T_i$ be the length of the *i*th sentence, the number of words/tokens it con
 
 indicates that the *k*th feature for the *j*th word/token in the sentence has value 1.  Next, the “_i.y_” file contains the label $c \in \{1, . . . , 23\}$ of each of the $T_i$ words/tokens in the sentence.
 
+## Environment
+
+- Dependencies
+
+    We require the following packages that can be directly installed from pip:
+
+    - GPflow >= 1.3.0
+    - numpy >= 1.11.1
+    - scikit-learn >= 0.17.1
+    - scipy >= 0.17.0
+    - tensorflow >= 1.11
+
+- Installation
+    - on MAC or linux
+    ```shell
+    $ pip3 install --user -U pip
+    $ pip3 install -r requirement.txt
+    ```
+    - on Windows
+    ```powershell
+    $ python -m pip install --user -U pip
+    $ pip install -r requirement.txt
+    ```
 
 ## Preprocessing
 
