@@ -1,5 +1,6 @@
 # Text-chunking-based-on-GP
 <!-- this a lab for practicing the AutoGP and BGPLVM and SAVIGP -->
+_Note: please install the plugin for chrome [Tex All the things](https://chrome.google.com/webstore/detail/tex-all-the-things/cbimabofgmfdkicghcadidpemeenbffn)_
 
 ## Background
 
