@@ -8,7 +8,7 @@ In this academic project, we made use of the dataset from _the CoNLL-2000 shared
 
 _He reckons the current account deficit will narrow to only #1.8 billion in September._
 
-The segmentation of this sentence into chunks and their corresponding labels is shown in table 1. The chunk label contains the type of the chunk, e.q. **I-NP** for noun phrase words and **I-VP** for verb phrase words. Most chunk types have two kinds of labels to delineate the boundaries of the chunk, **B-CHUNK** for the first word of the chunk and **I-CHUNK** for every other word in the chunk. While all the necessary information to carry out this assignment is contained within this assignment specification, you may also find out more about this task at [Here](https://www.clips.uantwerpen.be/conll2000/chunking/)
+The segmentation of this sentence into chunks and their corresponding labels is shown in table 1. The chunk label contains the type of the chunk, e.q. **I-NP** for noun phrase words and **I-VP** for verb phrase words. Most chunk types have two kinds of labels to delineate the boundaries of the chunk, **B-CHUNK** for the first word of the chunk and **I-CHUNK** for every other word in the chunk. While all the necessary information to carry out this assignment is contained within this assignment specification, you may also find out more about this task at [Here](https://www.clips.uantwerpen.be/conll2000/chunking/)
 
 ---------
 
@@ -21,7 +21,7 @@ Table 1.
 | the       | B-NP |
 | current   | I-NP |
 | account   | I-NP |
-| deficit   | I-NP |
+| deficit   | I-NP |
 | will      | B-VP |
 | narrow    | I-VP |
 | to        | B-PP |
@@ -37,7 +37,7 @@ Table 1.
 
 ## Data
 
-Instead of providing with raw text data, we have preprocessed and extracted features from this dataset. These are given in the compressed file "**conll_train.zip**" and "**conll_test_features.zip**". When extracted, you will find less "_i.x_" and "_i.y_" consisting of the features and chunk labels for the *i*th sentence, respectively.
+Instead of providing with raw text data, we have preprocessed and extracted features from this dataset. These are given in the compressed file "**conll_train.zip**" and "**conll_test_features.zip**". When extracted, you will find less "_i.x_" and "_i.y_" consisting of the features and chunk labels for the *i*th sentence, respectively.
 
 ### Schema
 Let $T_i$ be the length of the *i*th sentence, the number of words/tokens it contains. There is a $D$-dimensional binary feature vector for each word/token in the sentence, where $D$ = 2, 035, 523. Due to the high-dimensionality of the feature space, the “_i.x_” file provides a _sparse_ representation of the feature vectors for the *i*th sentence. A row entry with the value
